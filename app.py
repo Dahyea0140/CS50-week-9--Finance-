@@ -1,7 +1,7 @@
 import os
 
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -42,7 +42,28 @@ def index():
 @login_required
 def buy():
     """Buy shares of stock"""
-    return apology("TODO")
+
+    # User reached route by clicking buy
+    if request.method == "POST":
+        # User given stock symbol and share number
+        symbol = request.form.get("symbol")
+        shares = request.form.get("shares")
+        lookup_result = lookup(symbol.upper())
+
+        # User input can't be empty
+        if symbol == "" or symbol.strip() == "":
+            return apology("Please enter a stock symbol", 403)
+        if lookup_result is None:
+            return apology("Invalid Stock", 403)
+        try:
+            if int(shares) <= 0:
+                return apology("Please enter a positive integer number", 403)
+        except (ValueError, TypeError):
+            print("Invalid Input")
+        else:
+            return redirect("/")
+    else:
+        return render_template("buy.html")
 
 
 @app.route("/history")
@@ -106,7 +127,17 @@ def logout():
 @login_required
 def quote():
     """Get stock quote."""
-    return apology("TODO")
+    if request.method == "POST":
+        symbol = request.form.get("symbol")
+        result = lookup(symbol)
+
+        if symbol == "":
+            return apology("Please qoute a stock symbol", 403)
+        else:
+            return render_template("quoted.html", lookup_result=result)
+
+    else:
+        return render_template("quote.html")
 
 
 @app.route("/register", methods=["GET", "POST"])
