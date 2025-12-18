@@ -47,8 +47,13 @@ def buy():
     if request.method == "POST":
         # User given stock symbol and share number
         symbol = request.form.get("symbol")
-        shares = request.form.get("shares")
+        shares = int(request.form.get("shares"))
         lookup_result = lookup(symbol.upper())
+        price = int(lookup_result.price)
+        my_id = session["user_id"]
+        avaliable_cash = db.execute(
+            "SELECT cash FROM portfolio WHERE user_id = ?", my_id
+        )
 
         # User input can't be empty
         if symbol == "" or symbol.strip() == "":
@@ -61,7 +66,18 @@ def buy():
         except (ValueError, TypeError):
             print("Invalid Input")
         else:
-            return redirect("/")
+            if int(avaliable_cash) >= price:
+                price = avaliable_cash - price
+                db.execute(
+                    "INSERT INTO portfolio(stock_symbol,shares,price) VALUES(?,?,?) WHERE user_id = ?",
+                    symbol,
+                    shares,
+                    price,
+                    my_id,
+                )
+            else:
+                return apology("Not Enough Money", 403)
+        return redirect("/")
     else:
         return render_template("buy.html")
 
