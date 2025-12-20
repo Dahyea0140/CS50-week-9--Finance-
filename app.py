@@ -45,59 +45,83 @@ def buy():
 
     # User reached route by clicking buy
     if request.method == "POST":
-        # User given stock symbol and share number
-        symbol = request.form.get("symbol")
-        lookup_result = lookup(symbol.upper())
-        price = int(lookup_result["price"])
+        # Saving the users id via session
         my_id = session["user_id"]
-        cash_row = db.execute("SELECT cash FROM portfolio WHERE user_id = ?", my_id)
-        available_cash = int(cash_row[0]["cash"])
 
-        # User input can't be empty
+        # Converting the cash into float for calculation
+        cash_row = db.execute("SELECT cash FROM users WHERE id = ?", my_id)
+        available_cash = float(cash_row[0]["cash"])
+
+        # User symbol input can't be empty
+        symbol = request.form.get("symbol")
         if symbol == "" or symbol.strip() == "":
             return apology("Please enter a stock symbol", 403)
+
+        # Converting user symbol input to upper case.
+        # User Input symbol has to exist
+        lookup_result = lookup(symbol.upper())
         if lookup_result is None:
             return apology("Invalid Stock", 403)
-        try:
-            if request.form.get("shares") <= 0:
-                return apology("Please enter a positive integer number", 403)
-        except (ValueError, TypeError):
-            print("Invalid Input")
-        else:
-            shares = int(request.form.get("shares"))
-            share_cost = shares * price
-            if available_cash >= share_cost:
-                available_cash = available_cash - share_cost
 
-                id_rows = db.execute(
-                    "SELECT * FROM portfolio WHERE stock_symbol = ? AND user_id =? ",
+        # User input share has to be digit
+        shares_str = request.form.get("shares")
+        if not shares_str or not shares_str.isdigit():
+            return apology("Share must be a positive number", 403)
+
+        # User input share has to a positive integer
+        shares = int(shares_str)
+        if shares <= 0:
+            return apology("Please enter a positive integer number", 403)
+
+        # Calculating the total share price user want to buy
+        price = float(lookup_result["price"])
+        share_cost = shares * price
+
+        # User must have more mney than total share cost to buy the shares
+        if available_cash >= share_cost:
+            # Check if it is a new user
+            id_rows = db.execute(
+                "SELECT * FROM portfolio WHERE stock_symbol = ? AND user_id =? ",
+                symbol,
+                my_id,
+            )
+            if len(id_rows) != 1:
+                # For new stock Insert their details in the new portfolio table
+                db.execute(
+                    "INSERT INTO portfolio(user_id,stock_symbol,shares) VALUES(?,?,?)",
+                    my_id,
+                    symbol,
+                    shares,
+                )
+                # Update users cash
+                db.execute(
+                    "UPDATE users SET cash = cash - ? WHERE id = ?",
+                    share_cost,
+                    my_id,
+                )
+                return redirect("/")
+            else:
+                # User buying previously bought shares increase shares
+                db.execute(
+                    "UPDATE portfolio SET shares = shares + ? WHERE stock_symbol = ? AND user_id =? ",
+                    shares,
                     symbol,
                     my_id,
                 )
-                if len(id_rows) != 1:
-                    db.execute(
-                        "INSERT INTO portfolio(user_id,stock_symbol,shares,price,cash) VALUES(?,?,?,?)",
-                        my_id,
-                        symbol,
-                        shares,
-                        price,
-                        available_cash,
-                    )
-                    return redirect("/")
-                else:
-                    db.execute(
-                        "UPDATE portfolio SET shares = shares + ?,price,cash WHERE stock_symbol = ? AND user_id =? ",
-                        shares,
-                        price,
-                        available_cash,
-                        symbol,
-                        my_id,
-                    )
-                    return redirect("/")
+                # Update their cash
+                db.execute(
+                    "UPDATE users SET cash = cash - ? WHERE id = ?",
+                    share_cost,
+                    my_id,
+                )
 
-            else:
-                return apology("Not Enough Money", 403)
+                return redirect("/")
+
+        else:
+            # If User doesn't have enough money display apology
+            return apology("Not Enough Money", 403)
     else:
+        # If user didn't hit buy then show buy screen
         return render_template("buy.html")
 
 
