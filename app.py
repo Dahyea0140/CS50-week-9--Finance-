@@ -35,6 +35,22 @@ def after_request(response):
 @login_required
 def index():
     """Show portfolio of stocks"""
+    user_id = session["user_id"]
+    user = db.execute("SELECT username FROM users WHERE id = ?", user_id)
+    cash = db.execute("SELECT cash FROM users WHERE id = ?", user_id)
+    owned_stocks = db.execute(
+        "SELECT symbols,SUM(shares) FROM portfolio WHERE id = ? HAVING SUM(shares) => 1",
+        user_id,
+    )
+    
+    price_list = owned_stocks[0]
+    
+    price_each_stock = db.execute(
+        "SELECT price FROM portfolio WHERE stock_symbol IN ?", owned_stocks
+    )
+
+    for 
+
     return apology("TODO")
 
 
@@ -75,6 +91,7 @@ def buy():
 
         # Calculating the total share price user want to buy
         price = float(lookup_result["price"])
+        db.execute("INSERT INTO portfolio(price) VALUES(?)", price)
         share_cost = shares * price
 
         # User must have more mney than total share cost to buy the shares
