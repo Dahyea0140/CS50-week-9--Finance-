@@ -39,19 +39,22 @@ def index():
     user = db.execute("SELECT username FROM users WHERE id = ?", user_id)
     cash = db.execute("SELECT cash FROM users WHERE id = ?", user_id)
     owned_stocks = db.execute(
-        "SELECT symbols,SUM(shares) FROM portfolio WHERE id = ? HAVING SUM(shares) => 1",
+        "SELECT stock_symbol,SUM(shares) FROM portfolio WHERE id = ? HAVING SUM(shares) => 1",
         user_id,
     )
-    
-    price_list = owned_stocks[0]
-    
-    price_each_stock = db.execute(
-        "SELECT price FROM portfolio WHERE stock_symbol IN ?", owned_stocks
+
+    for stock in owned_stocks:
+        temp_stock_symbol = lookup(stock["stock_symbol"])
+        stock["price"] = temp_stock_symbol["price"]
+        stock["value"] = temp_stock_symbol["price"] * stock["SUM(shares)"]
+
+    total_stock_value = 0
+    for stock in owned_stocks:
+        total_stock_value += stock["value"]
+
+    return render_template(
+        "portfolio.html", user, cash, owned_stocks, total_stock_value
     )
-
-    for 
-
-    return apology("TODO")
 
 
 @app.route("/buy", methods=["GET", "POST"])
