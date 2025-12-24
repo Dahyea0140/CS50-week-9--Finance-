@@ -257,4 +257,26 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
+
+    user_id = session["user_id"]
+    user = db.execute("SELECT username FROM users WHERE id = ?", user_id)
+
+    owned_stocks = db.execute(
+        "SELECT stock_symbol,SUM(shares) AS total_share FROM portfolio GROUP BY stock_symbol WHERE user_id = ? HAVING total_share > 0",
+        user_id,
+    )
+
+    if request.method == "POST":
+        stock = request.form.get("symbol")
+        share_str = request.form.get("shares")
+        if stock not in owned_stocks:
+            return apology("Please enter a stock that you own")
+        if not share_str or not share_str.isdigit():
+            return apology("Please enter the number of shares you want to sell.")
+        share = int(share_str)
+        if share > 0:
+            return apology("Please enter a positive number")
+        lookup_result = lookup("symbol")
+
+        price = lookup_result.price
     return apology("TODO")
