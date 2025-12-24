@@ -1,27 +1,30 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Portfolio of {{ user }}
+    Portfolio of {{ username }}
 {% endblock  %}
 
 {% block main %}
 
-    <h1><strong>Available Cash</strong>:{{ cash }}</h1>
-    <h2><strong>Grand Total</strong>(stocks total value plus cash):{{ cash + total_stock_value }}</h2>
+    <h1><strong>Available Cash</strong>:{{ user_cash }}</h1>
+    <h2><strong>Grand Total</strong>(stocks total value plus cash):{{ user_cash + total }}</h2>
     <table>
         <thead>
-            <tr>Owned Stocks</tr>
-            <tr>Number of Owned Stocks</tr>
-            <tr>Price of Stock</tr>
-            <tr>Total Price Holding</tr>
+            <tr>
+                <th>Owned Stocks</th>
+                <th>Number of Owned Stocks</th>
+                <th>Price of Stock</th>
+                <th>Total Price Holding</th>
+            </tr>
         </thead>
         <tbody>
-            {% for stock in owned_stocks  %}
+            {% for stock in stocks  %}
                 <tr>
-                    <td>{{ owned_stocks.stock_symbol }}</td>
-                    <td>{{ owned_stocks.SUM(shares) }}</td>
-                    <td>{{ owned_stocks.price }}</td>
-                    <td>{{ owned_stocks.value }}</td>
+                    <td>{{ stock.stock_symbol }}</td>
+                    <td>{{ stock.total_shares }}</td>
+                    <td>{{ stock.price }}</td>
+                    <td>{{ stock.value }}</td>
+                </tr>
             {% endfor %}
     </table>
 

@@ -35,25 +35,30 @@ def after_request(response):
 @login_required
 def index():
     """Show portfolio of stocks"""
+
     user_id = session["user_id"]
     user = db.execute("SELECT username FROM users WHERE id = ?", user_id)
     cash = db.execute("SELECT cash FROM users WHERE id = ?", user_id)
     owned_stocks = db.execute(
-        "SELECT stock_symbol,SUM(shares) FROM portfolio WHERE id = ? HAVING SUM(shares) => 1",
+        "SELECT stock_symbol,SUM(shares) AS total_shares FROM portfolio WHERE user_id = ? GROUP BY stock_symbol HAVING SUM(shares) > 0",
         user_id,
     )
 
     for stock in owned_stocks:
         temp_stock_symbol = lookup(stock["stock_symbol"])
         stock["price"] = temp_stock_symbol["price"]
-        stock["value"] = temp_stock_symbol["price"] * stock["SUM(shares)"]
+        stock["value"] = temp_stock_symbol["price"] * stock["total_shares"]
 
     total_stock_value = 0
     for stock in owned_stocks:
         total_stock_value += stock["value"]
 
     return render_template(
-        "portfolio.html", user, cash, owned_stocks, total_stock_value
+        "portfolio.html",
+        username=user[0]["username"],
+        user_cash=cash[0]["cash"],
+        stocks=owned_stocks,
+        total=total_stock_value,
     )
 
 
@@ -93,8 +98,7 @@ def buy():
             return apology("Please enter a positive integer number", 403)
 
         # Calculating the total share price user want to buy
-        price = float(lookup_result["price"])
-        db.execute("INSERT INTO portfolio(price) VALUES(?)", price)
+        price = lookup_result["price"]
         share_cost = shares * price
 
         # User must have more mney than total share cost to buy the shares
