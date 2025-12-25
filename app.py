@@ -257,26 +257,74 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-
     user_id = session["user_id"]
-    user = db.execute("SELECT username FROM users WHERE id = ?", user_id)
 
     owned_stocks = db.execute(
-        "SELECT stock_symbol,SUM(shares) AS total_share FROM portfolio GROUP BY stock_symbol WHERE user_id = ? HAVING total_share > 0",
+        "SELECT stock_symbol,SUM(shares) AS total_share FROM portfolio WHERE user_id = ? GROUP BY stock_symbol  HAVING total_share > 0",
         user_id,
     )
 
+    owned_stocks_symbols = []
+
+    for row in owned_stocks:
+        owned_stocks_symbols.append(row["stock_symbol"])
+
     if request.method == "POST":
         stock = request.form.get("symbol")
+
         share_str = request.form.get("shares")
-        if stock not in owned_stocks:
+
+        if stock not in owned_stocks_symbols:
             return apology("Please enter a stock that you own")
         if not share_str or not share_str.isdigit():
             return apology("Please enter the number of shares you want to sell.")
         share = int(share_str)
-        if share > 0:
+        if share <= 0:
             return apology("Please enter a positive number")
-        lookup_result = lookup("symbol")
 
-        price = lookup_result.price
-    return apology("TODO")
+        lookup_result = lookup(stock)
+
+        price = lookup_result["price"]
+        share_cost = share * price
+
+        current_shares = db.execute(
+            "SELECT SUM(shares) AS total_share FROM portfolio WHERE user_id = ? AND stock_symbol = ?",
+            user_id,
+            stock,
+        )
+
+        remaining_shares = current_shares[0]["total_share"] - share
+
+        if remaining_shares < 0:
+            return apology("You don't have enugh shares")
+        elif remaining_shares == 0:
+            db.execute(
+                "UPDATE users SET cash = cash + ? WHERE id = ?",
+                share_cost,
+                user_id,
+            )
+
+            db.execute(
+                "DELETE FROM portfolio WHERE user_id = ? AND stock_symbol = ?",
+                user_id,
+                stock,
+            )
+            return redirect("/")
+        else:
+            db.execute(
+                "UPDATE users SET cash = cash + ? WHERE id = ?",
+                share_cost,
+                user_id,
+            )
+
+            db.execute(
+                "UPDATE portfolio SET shares = shares - ? WHERE user_id = ? AND stock_symbol = ?",
+                share,
+                user_id,
+                stock,
+            )
+
+            return redirect("/")
+
+    else:
+        return render_template("sell.html", stocks=owned_stocks)

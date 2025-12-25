@@ -7,13 +7,13 @@
 {% block main %}
     <h1>Sell Stocks</h1>
     <form action={{ url_for('sell') }} method = "post">
-        <input autocomplete="off" autofocus name="symbol" type="text">
         <select name="symbol" required>
             <option disabled selected value="">Stock Symbol</option>
-            {% for stock in owned_stocks %}
-                <option value="{{ stock }}">{{ stock }}</option>
+            {% for stock in stocks %}
+                <option value="{{ stock.stock_symbol }}">{{ stock.stock_symbol }}({{ stock.total_share }} shares)</option>
             {% endfor %}
         </select>
-        <input name = "shares" type="text" placeholder="Shares" required> 
+        <input name = "shares" type="text" placeholder="Shares" required>
+        <button type="Submit">Sell</button>
     </form>
 {% endblock  %}
