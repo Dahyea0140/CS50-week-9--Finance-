@@ -35,24 +35,36 @@ def after_request(response):
 @login_required
 def index():
     """Show portfolio of stocks"""
-
+    # Save user id and username
     user_id = session["user_id"]
     user = db.execute("SELECT username FROM users WHERE id = ?", user_id)
+
+    # Save the cash user has
     cash = db.execute("SELECT cash FROM users WHERE id = ?", user_id)
+
+    # Save the number of per stock user have
     owned_stocks = db.execute(
         "SELECT stock_symbol,SUM(shares) AS total_shares FROM portfolio WHERE user_id = ? GROUP BY stock_symbol HAVING SUM(shares) > 0",
         user_id,
     )
 
+    # Adding two new things in owned stocks list
     for stock in owned_stocks:
-        temp_stock_symbol = lookup(stock["stock_symbol"])
-        stock["price"] = temp_stock_symbol["price"]
-        stock["value"] = temp_stock_symbol["price"] * stock["total_shares"]
+        # Saving the lookup result
+        lookup_result = lookup(stock["stock_symbol"])
 
+        # Save the price for each stock owned under price key
+        stock["price"] = lookup_result["price"]
+
+        #  Save the total price for the each in owned by multiplying total shares under value key
+        stock["value"] = lookup_result["price"] * stock["total_shares"]
+
+    # Summing total value of all owned stocks
     total_stock_value = 0
     for stock in owned_stocks:
         total_stock_value += stock["value"]
 
+    # Display portfolio html page
     return render_template(
         "portfolio.html",
         username=user[0]["username"],
