@@ -269,15 +269,19 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
+    # Save the User id
     user_id = session["user_id"]
 
+    # Stocks the user owns
     owned_stocks = db.execute(
         "SELECT stock_symbol,SUM(shares) AS total_share FROM portfolio WHERE user_id = ? GROUP BY stock_symbol  HAVING total_share > 0",
         user_id,
     )
 
+    # A blank list for the dropdown menu in the html page
     owned_stocks_symbols = []
 
+    # Adding the symbols of stocks the user owns into the blank list
     for row in owned_stocks:
         owned_stocks_symbols.append(row["stock_symbol"])
 
@@ -288,8 +292,10 @@ def sell():
 
         if stock not in owned_stocks_symbols:
             return apology("Please enter a stock that you own")
+
         if not share_str or not share_str.isdigit():
             return apology("Please enter the number of shares you want to sell.")
+
         share = int(share_str)
         if share <= 0:
             return apology("Please enter a positive number")
@@ -299,16 +305,20 @@ def sell():
         price = lookup_result["price"]
         share_cost = share * price
 
+        # Users current shares
         current_shares = db.execute(
             "SELECT SUM(shares) AS total_share FROM portfolio WHERE user_id = ? AND stock_symbol = ?",
             user_id,
             stock,
         )
 
+        # Users remaining shares after substracting the number of shares he wants to sell
         remaining_shares = current_shares[0]["total_share"] - share
 
         if remaining_shares < 0:
             return apology("You don't have enugh shares")
+
+        # If after sell no share left delete that row and update user cash
         elif remaining_shares == 0:
             db.execute(
                 "UPDATE users SET cash = cash + ? WHERE id = ?",
@@ -322,6 +332,8 @@ def sell():
                 stock,
             )
             return redirect("/")
+
+        # If shares left after sell then update shar and user cash
         else:
             db.execute(
                 "UPDATE users SET cash = cash + ? WHERE id = ?",
