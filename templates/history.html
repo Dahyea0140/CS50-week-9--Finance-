@@ -6,14 +6,26 @@
 
 {% block main %}
     <table>
-        <th>
-            <tr>Stock Symbol</tr>
-            <tr>Stock Status</tr>
-            <tr>Stock Price</tr>
-            <tr>Number of Stocks</tr>
-            <tr>Total Price</tr>    
-        </th>
+        <tr>
+            <th>Time</th>
+            <th>Stock Symbol</th>
+            <th>Stock Status</th>
+            <th>Stock Price</th>
+            <th>Number of Stocks</th>
+            <th>Total Price</th>    
+        </tr>
         <tbody>
+            {% for history in stocks_history %}
+            <tr>
+                <td>{{ history.transacted_at }}</td>
+                <td>{{ history.symbol }}</td>
+                <td>{{ history.stock_status }}</td>
+                <td>{{ history.price }}</td>
+                <td>{{ history.No_of_shares }}</td>
+                <td>{{ history.total_price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
             
 
     </table>

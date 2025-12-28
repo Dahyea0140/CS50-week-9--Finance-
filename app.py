@@ -37,10 +37,10 @@ def index():
     """Show portfolio of stocks"""
     # Save user id and username
     user_id = session["user_id"]
-    user = db.execute("SELECT username FROM users WHERE id = ?", user_id)
+    user_row = db.execute("SELECT username FROM users WHERE id = ?", user_id)
 
     # Save the cash user has
-    cash = db.execute("SELECT cash FROM users WHERE id = ?", user_id)
+    cash_row = db.execute("SELECT cash FROM users WHERE id = ?", user_id)
 
     # Save the number of per stock user have
     owned_stocks = db.execute(
@@ -64,13 +64,17 @@ def index():
     for stock in owned_stocks:
         total_stock_value += stock["value"]
 
+    user = user_row[0]["username"]
+    cash = int(cash_row[0]["cash"])
+    total_cash = int(total_stock_value)
+
     # Display portfolio html page
     return render_template(
         "portfolio.html",
-        username=user[0]["username"],
-        user_cash=cash[0]["cash"],
+        username=user,
+        user_cash=cash,
         stocks=owned_stocks,
-        total=total_stock_value,
+        total=total_cash,
     )
 
 
@@ -135,6 +139,17 @@ def buy():
                     share_cost,
                     my_id,
                 )
+
+                db.execute(
+                    "INSERT INTO transactions(user_id,symbol,stock_status,price,total_price,No_of_shares) VALUES(?,?,?,?,?,?)",
+                    my_id,
+                    symbol,
+                    "bought",
+                    price,
+                    share_cost,
+                    shares,
+                )
+
                 return redirect("/")
             else:
                 # User buying previously bought shares increase shares
@@ -151,6 +166,16 @@ def buy():
                     my_id,
                 )
 
+                db.execute(
+                    "INSERT INTO transactions(user_id,symbol,stock_status,price,total_price,No_of_shares) VALUES(?,?,?,?,?,?)",
+                    my_id,
+                    symbol,
+                    "bought",
+                    price,
+                    share_cost,
+                    shares,
+                )
+
                 return redirect("/")
 
         else:
@@ -165,7 +190,16 @@ def buy():
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
+    user_id = session["user_id"]
+
+    # Take details about the users transactions
+    stock_details = db.execute(
+        "SELECT * FROM transactions WHERE user_id = ?",
+        user_id,
+    )
+
+    # Use it in the history html
+    return render_template("history.html", stocks_history=stock_details)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -222,10 +256,13 @@ def logout():
 @login_required
 def quote():
     """Get stock quote."""
+
+    # User requested quote route via POST
     if request.method == "POST":
         symbol = request.form.get("symbol")
         result = lookup(symbol)
 
+        # Check for a valid symbol
         if symbol == "":
             return apology("Please qoute a stock symbol", 403)
         else:
@@ -306,14 +343,16 @@ def sell():
         share_cost = share * price
 
         # Users current shares
-        current_shares = db.execute(
+        current_row = db.execute(
             "SELECT SUM(shares) AS total_share FROM portfolio WHERE user_id = ? AND stock_symbol = ?",
             user_id,
             stock,
         )
 
+        current_share = current_row[0]["total_share"]
+
         # Users remaining shares after substracting the number of shares he wants to sell
-        remaining_shares = current_shares[0]["total_share"] - share
+        remaining_shares = current_share - share
 
         if remaining_shares < 0:
             return apology("You don't have enugh shares")
@@ -330,6 +369,16 @@ def sell():
                 "DELETE FROM portfolio WHERE user_id = ? AND stock_symbol = ?",
                 user_id,
                 stock,
+            )
+
+            db.execute(
+                "INSERT INTO transactions(user_id,symbol,stock_status,price,total_price,No_of_shares) VALUES(?,?,?,?,?,?)",
+                user_id,
+                stock,
+                "sold",
+                price,
+                share_cost,
+                share,
             )
             return redirect("/")
 
@@ -348,7 +397,47 @@ def sell():
                 stock,
             )
 
+            db.execute(
+                "INSERT INTO transactions(user_id,symbol,stock_status,price,total_price,No_of_shares) VALUES(?,?,?,?,?,?)",
+                user_id,
+                stock,
+                "sold",
+                price,
+                share_cost,
+                share,
+            )
+
             return redirect("/")
 
     else:
         return render_template("sell.html", stocks=owned_stocks)
+
+
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    "Change Password"
+
+    if request.method == "POST":
+        user_id = session["user_id"]
+        current_password = generate_password_hash(request.form.get("current_password"))
+        new_password = generate_password_hash(request.form.get("new_password"))
+        confirm_password = generate_password_hash(request.form.get("current_password"))
+
+        password_row = db.execute("SELECT hash FROM users WHERE id = ?", user_id)
+
+        password = password_row[0]["hash"]
+
+        if not request.form.get("current_password"):
+            return apology("Please Type your password")
+        if not request.form.get("new_password"):
+            return apology("Please Type your new password")
+        if not request.form.get("confirm_password"):
+            return apology("Type your password again")
+
+        if not current_password == password:
+            return apology("Incorrect Password")
+        if not new_password == confirm_password:
+            return apology("Password don't match")
+        else:
+            db.execute("INSERT INTO users(hash) VALUES(?)", new_password)
