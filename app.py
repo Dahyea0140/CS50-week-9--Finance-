@@ -416,28 +416,66 @@ def sell():
 @app.route("/change_password", methods=["GET", "POST"])
 @login_required
 def change_password():
-    "Change Password"
-
+    """Change Password"""
     if request.method == "POST":
         user_id = session["user_id"]
-        current_password = generate_password_hash(request.form.get("current_password"))
-        new_password = generate_password_hash(request.form.get("new_password"))
-        confirm_password = generate_password_hash(request.form.get("current_password"))
+        # Take the user input password
+        current_password = request.form.get("current_password")
+        new_password = request.form.get("new_password")
+        confirm_password = request.form.get("confirm_password")
 
+        # Get the exisiting password
         password_row = db.execute("SELECT hash FROM users WHERE id = ?", user_id)
 
-        password = password_row[0]["hash"]
+        password_hash = password_row[0]["hash"]
 
-        if not request.form.get("current_password"):
+        # Check if all boxes are filled or valid
+        if not current_password or current_password == "":
             return apology("Please Type your password")
-        if not request.form.get("new_password"):
+        if not new_password or new_password == "":
             return apology("Please Type your new password")
-        if not request.form.get("confirm_password"):
+        if not confirm_password or confirm_password == "":
             return apology("Type your password again")
 
-        if not current_password == password:
+        # Convert the password into hash
+        new_password_hash = generate_password_hash(new_password)
+
+        # Match the passwords
+        if not check_password_hash(password_hash, current_password):
             return apology("Incorrect Password")
         if not new_password == confirm_password:
             return apology("Password don't match")
+
+        # Insert the password hash into the table
         else:
-            db.execute("INSERT INTO users(hash) VALUES(?)", new_password)
+            db.execute(
+                "UPDATE users SET hash = ? WHERE id = ?", new_password_hash, user_id
+            )
+            flash("Password changed successfully!")
+
+            return redirect("/")
+    return render_template("change_password.html")
+
+
+@app.route("/add_cash", methods=["GET", "POST"])
+@login_required
+def add_cash():
+    """Add additional cash"""
+
+    user_id = session["user_id"]
+    if request.method == "POST":
+        add_cash_str = request.form.get("add_cash")
+
+        add_cash = int(add_cash_str)
+        if not add_cash_str or add_cash_str == "":
+            return apology("Please add how much cash you want to add")
+        if add_cash <= 0:
+            return apology("Please add a positive ammount of cash")
+
+        else:
+            db.execute(
+                "UPDATE users SET cash = cash + ? WHERE id =?", add_cash, user_id
+            )
+            flash(f"${add_cash} Cash added")
+            return redirect("/")
+    return render_template("add_cash.html")

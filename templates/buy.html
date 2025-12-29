@@ -5,13 +5,37 @@
 {% endblock %}
 
 {% block main %}
-    <form action="{{ url_for('buy')}}" method = "post">
-        <div class="mb-3">
-            <input type="text" name = "symbol" placeholder="Symbol" required>
-        </div>
-        <div class="mb-3">
-            <input type="text" name = "shares" placeholder="Shares" required>
-        </div>
-        <button class="btn btn-primary" type="submit">Buy</button>        
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <h1 class="text-center mb-4">Buy Stocks</h1>
 
-{% endblock  %}
+                <form action="{{ url_for('buy') }}" method="post">
+                    <div class="mb-3">
+                        <input 
+                            class="form-control" 
+                            autofocus 
+                            name="symbol" 
+                            placeholder="Stock Symbol" 
+                            type="text" 
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <input 
+                            class="form-control" 
+                            name="shares" 
+                            placeholder="Number of Shares" 
+                            type="number" 
+                            min="1" 
+                            required>
+                    </div>
+
+                    <div class="text-center">
+                        <button class="btn btn-primary" type="submit">Buy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

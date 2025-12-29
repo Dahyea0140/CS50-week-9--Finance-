@@ -2,18 +2,29 @@
 
 {% block title %}
     Sell Stocks
-{% endblock  %}
+{% endblock %}
 
 {% block main %}
     <h1>Sell Stocks</h1>
-    <form action={{ url_for('sell') }} method = "post">
-        <select name="symbol" required>
-            <option disabled selected value="">Stock Symbol</option>
-            {% for stock in stocks %}
-                <option value="{{ stock.stock_symbol }}">{{ stock.stock_symbol }}({{ stock.total_share }} shares)</option>
-            {% endfor %}
-        </select>
-        <input name = "shares" type="text" placeholder="Shares" required>
-        <button type="Submit">Sell</button>
+    
+    <form action="{{ url_for('sell') }}" method="post">
+        <div class="mb-3">
+            <select name="symbol" class="form-select mx-auto w-auto" required>
+                <option disabled selected value="">Choose stock to sell</option>
+                {% for stock in stocks %}
+                    <option value="{{ stock.stock_symbol }}">
+                        {{ stock.stock_symbol }} ({{ stock.total_share }} shares)
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <input name="shares" class="form-control mx-auto w-auto" 
+                   placeholder="Number of shares" type="number" min="1" required>
+        </div>
+        <div class="text-center">
+            <button class="btn btn-primary" type="submit">Sell</button>
+        </div>
     </form>
-{% endblock  %}
+{% endblock %}
