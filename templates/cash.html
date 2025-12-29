@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Add Cash
+{% endblock  %}
+
+{% block main %}
+    <h2 class="text-center mb-4">Add Cash</h2>
+    <form action = {{ url_for("add_cash") method = "POST" }}>
+        <div class="mb-3">
+            <input name="add_cash" class="form-control mx-auto w-auto" placeholder="Place how cash you need" type = "number" min="1" required>
+        </div>
+        <div class="text-center">
+            <button class="btn btn-primary" type="submit">Sell</button>
+        </div>
+{% endblock  %}
+
+
