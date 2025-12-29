@@ -466,9 +466,9 @@ def add_cash():
     if request.method == "POST":
         add_cash_str = request.form.get("add_cash")
 
-        add_cash = int(add_cash_str)
         if not add_cash_str or add_cash_str == "":
             return apology("Please add how much cash you want to add")
+        add_cash = int(add_cash_str)
         if add_cash <= 0:
             return apology("Please add a positive ammount of cash")
 
@@ -476,6 +476,6 @@ def add_cash():
             db.execute(
                 "UPDATE users SET cash = cash + ? WHERE id =?", add_cash, user_id
             )
-            flash(f"${add_cash} Cash added")
+            flash(f"${add_cash:,} Cash added")
             return redirect("/")
     return render_template("add_cash.html")
