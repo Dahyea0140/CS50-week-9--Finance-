@@ -468,9 +468,11 @@ def add_cash():
 
         if not add_cash_str or add_cash_str == "":
             return apology("Please add how much cash you want to add")
+        if not add_cash_str.isdigit():
+            return apology("Please provide a digit")
         add_cash = int(add_cash_str)
         if add_cash <= 0:
-            return apology("Please add a positive ammount of cash")
+            return apology("Please add a positive amount of cash")
 
         else:
             db.execute(
